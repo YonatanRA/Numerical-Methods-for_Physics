@@ -1,0 +1,70 @@
+function Q=acerocalor2(t0,tf,nt,a,b,nx,ci,cca,ccb) %0,1,100000,0,1,100,,,,,,,,
+
+x=linspace(a,b,nx); 
+x=x'; 
+dx=x(2)-x(1); %Definimos vector de posiciones
+t=linspace(t0,tf,nt); 
+t=t';  
+dt=t(2)-t(1); %Definimos vector de tiempos
+
+cca=inline(cca,'t'); %Condiciones de contorno
+ccb=inline(ccb,'t');
+
+ci=vectorize(inline(ci,'x')); %Condicion inicial
+
+ro(1:20)=7.85; %Acero
+c(1:20)=0.45;
+k(1:19)=0.46;
+
+ro(21:50)=8; %Acero plateado
+c(21:50)=0.3;
+k(21:49)=1;
+
+ro(51:80)=9.32; %Plata
+c(51:80)=0.235;
+k(51:79)=4.29;
+
+ro(81:100)=7.85; %Acero
+c(81:100)=0.45;
+k(81:100)=0.46;
+
+k(20)=(3*k(19)+k(21))/2;%intercaras de material diferente
+k(50)=(k(49)+k(51))/2;
+k(80)=(k(79)+3*k(81))/2;
+
+
+
+for i=1:nx
+    r(i)=dt/(ro(i)*c(i)*dx^2);
+end
+
+u=ci(x); %Inicializamos la solucion
+u(1)=cca(t(1));
+u(end)=ccb(t(1));
+
+A=zeros(nx,nx);
+A(1,1)=1;
+A(nx,nx)=1;
+
+for j=2:nx-1
+    A(j,j-1)=r(j)*1/2*(3*k(j)-k(j+1));
+    A(j,j)=r(j)*(-2*k(j)+ro(j)*c(j)*dx^2/dt);
+    A(j,j+1)=r(j)*1/2*(k(j)+k(j+1));
+end
+
+sigma=15;% sigma de la exponencial
+qo=4;% qo cte la exp
+Q=zeros(nx,1);%vector de la fuente de calor
+
+for k=1:nx;
+    Q(k,1)=qo*exp(-((x(k)-x(nx/2))/sigma)^2);
+end
+
+
+for i=1:nt-1
+    u=A*u+Q;
+    %plot(x,u)
+    %getframe(gca)
+end
+%u=u+Q;
+plot(x,u)
